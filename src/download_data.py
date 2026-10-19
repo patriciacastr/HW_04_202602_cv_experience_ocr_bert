@@ -53,6 +53,7 @@ def main() -> None:
     set_seed(args.seed)
 
     rows = []
+    pii_rows = []  # nombres/estado SOLO para borrarlos del texto OCR (nunca como feature)
     for occ in OCCUPATIONS:
         print(f"\n== {occ}: muestreando {args.n_per_occ} CVs ==")
         sample = sample_occupation(occ, args.n_per_occ, args.seed)
@@ -69,6 +70,14 @@ def main() -> None:
                     # Solo para equidad (Pregunta 4). Si el campo no existe quedará vacío.
                     "sex": r.get("sex"),
                     "race": r.get("race"),
+                }
+            )
+            pii_rows.append(
+                {
+                    "id": cv_id,
+                    "first_name": r.get("first_name"),
+                    "last_name": r.get("last_name"),
+                    "state": r.get("state"),
                 }
             )
 
@@ -92,6 +101,13 @@ def main() -> None:
         if meta[col].isna().all() and col in tdf.columns:
             meta[col] = meta["id"].map(tdf.set_index("id")[col])
     meta.to_csv(RAW_DIR / "metadata.csv", index=False)
+
+    # Nombres/estado: solo para que preprocessing.py los borre del texto. Jamás features.
+    pii = pd.DataFrame(pii_rows)
+    for col in ("first_name", "last_name", "state"):
+        if pii[col].isna().all() and col in tdf.columns:
+            pii[col] = pii["id"].map(tdf.set_index("id")[col])
+    pii.to_csv(RAW_DIR / "pii_for_scrubbing.csv", index=False)
 
     # --- Reportes pedidos: distribución y tope ---
     meta["exp_year"] = pd.to_numeric(meta["exp_year"], errors="coerce")
