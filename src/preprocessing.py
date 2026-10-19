@@ -156,6 +156,16 @@ def build_variants(d: dict, names: list[str] | None, conf_thr: float) -> dict:
     }
 
 
+def clean_reference_text(text: str, names: list[str] | None = None) -> str:
+    """Aplica al texto de REFERENCIA la misma limpieza que al OCR (para la Pregunta 2:
+    evaluar cada modelo con OCR vs con texto perfecto). Solo se usa para evaluar."""
+    lines = fix_lines([normalize(l) for l in str(text).splitlines()])
+    t = "\n".join(lines)
+    t, _ = scrub_personal(t, names)
+    t, _, _ = mask_direct_answers(t)
+    return t
+
+
 # --------------------------------------------------------------------------- #
 # CLI
 # --------------------------------------------------------------------------- #

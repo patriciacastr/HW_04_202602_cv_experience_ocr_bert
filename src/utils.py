@@ -94,3 +94,82 @@ def _json_default(o):
     if isinstance(o, np.ndarray):
         return o.tolist()
     raise TypeError(f"No serializable: {type(o)}")
+
+
+# --------------------------------------------------------------------------- #
+# Modelos: nombres, etiquetas y colores fijos (el color sigue a la entidad)
+# Paleta categórica validada (slots 1-4): azul, naranja, aqua, amarillo.
+# --------------------------------------------------------------------------- #
+MODEL_ORDER = ["median", "tfidf", "embeddings", "bert"]
+MODEL_LABELS = {
+    "median": "Median",
+    "tfidf": "TF-IDF + Ridge",
+    "embeddings": "Embeddings + Ridge",
+    "bert": "Fine-tuned BERT",
+}
+MODEL_COLORS = {
+    "bert": "#2a78d6",
+    "tfidf": "#eb6834",
+    "embeddings": "#1baf7a",
+    "median": "#eda100",
+}
+
+
+# --------------------------------------------------------------------------- #
+# Carga de datos compartida por todos los modelos (mismo split para todos)
+# --------------------------------------------------------------------------- #
+def load_split(name: str, text_col: str = "text_clean"):
+    """Devuelve el split ('train'|'val'|'test') con columnas id, occupation, exp_year,
+    band y text. NO incluye edad, sexo, raza, nombres ni ubicación."""
+    import pandas as pd
+
+    sp = pd.read_csv(SPLIT_DIR / f"{name}.csv", dtype={"id": str})
+    ds = pd.read_csv(PROC_DIR / "dataset.csv", dtype={"id": str},
+                     usecols=["id", "text_raw", "text_clean", "text_clean_lowconf"])
+    df = sp.merge(ds[["id", text_col]].rename(columns={text_col: "text"}), on="id", how="left")
+    df["text"] = df["text"].fillna("")
+    return df
+
+
+def load_reference_clean(ids) -> list[str]:
+    """Texto de REFERENCIA limpiado igual que el OCR. Solo para evaluar (Pregunta 2),
+    nunca para entrenar."""
+    import pandas as pd
+    from preprocessing import clean_reference_text
+
+    ref = pd.read_csv(RAW_DIR / "reference_text.csv", dtype={"id": str}).set_index("id")["text"]
+    pii_path = RAW_DIR / "pii_for_scrubbing.csv"
+    pii = pd.read_csv(pii_path, dtype={"id": str}).set_index("id") if pii_path.exists() else None
+    out = []
+    for i in ids:
+        names = None
+        if pii is not None and i in pii.index:
+            names = [str(pii.loc[i, "first_name"]), str(pii.loc[i, "last_name"])]
+        out.append(clean_reference_text(ref.get(i, ""), names))
+    return out
+
+
+def save_predictions(name: str, frames: dict, info: dict) -> None:
+    """Guarda predicciones de un modelo y su info (tiempos, hiperparámetros).
+
+    frames: {'val': (df, y_pred, y_pred_ref|None), 'test': (df, y_pred, y_pred_ref|None)}
+    Archivo: output/metrics/predictions_<name>.csv con id, split, y_true, y_pred, y_pred_ref.
+    """
+    import pandas as pd
+
+    parts = []
+    for split, (df, y_pred, y_ref) in frames.items():
+        parts.append(pd.DataFrame({
+            "id": df["id"].values, "split": split, "y_true": df["exp_year"].values,
+            "y_pred": clip_years(np.asarray(y_pred, dtype=float)),
+            "y_pred_ref": (clip_years(np.asarray(y_ref, dtype=float))
+                           if y_ref is not None else np.nan),
+        }))
+    MET_DIR.mkdir(parents=True, exist_ok=True)
+    pd.concat(parts).to_csv(MET_DIR / f"predictions_{name}.csv", index=False)
+    save_json(info, MET_DIR / f"info_{name}.json")
+    print(f"Guardado predictions_{name}.csv e info_{name}.json")
+
+
+def mae(y_true, y_pred) -> float:
+    return float(np.mean(np.abs(np.asarray(y_pred, float) - np.asarray(y_true, float))))
