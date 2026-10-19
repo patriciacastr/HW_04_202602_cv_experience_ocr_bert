@@ -203,6 +203,8 @@ def main() -> None:
     sens = []
     for f in sorted(MET_DIR.glob("predictions_*.csv")):
         name = f.stem.replace("predictions_", "")
+        if name.endswith("_smoke"):      # pruebas rápidas: no entran en la comparación
+            continue
         p = load_test_preds(name, test.index)
         if p is not None:
             sens.append({"variant": name, "MAE test (OCR text)": np.abs(p["y_pred"].values - y).mean()})
