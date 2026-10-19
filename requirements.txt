@@ -1,0 +1,32 @@
+# IMPORTANTE: instala PaddlePaddle PRIMERO (build CPU o GPU) desde su índice oficial:
+#   CPU:  python -m pip install paddlepaddle==3.2.0 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
+#   GPU:  ver https://www.paddlepaddle.org.cn/install/quick (elige tu versión de CUDA)
+# Luego: pip install -r requirements.txt
+#
+# TODO: antes de entregar, ejecuta `pip freeze | grep -i -E "paddle|transformers|torch|..."`
+# y reemplaza estas versiones por las que realmente usaste (la tarea pide versiones fijadas).
+
+paddlepaddle==3.2.0
+paddleocr==3.2.0
+
+datasets==4.0.0
+huggingface_hub==0.35.0
+transformers==4.56.0
+accelerate==1.10.0
+sentence-transformers==5.1.0
+torch==2.8.0
+
+pandas==2.3.0
+numpy==2.1.0
+scikit-learn==1.7.0
+scipy==1.15.0
+matplotlib==3.10.0
+seaborn==0.13.2
+plotly==6.3.0
+jiwer==4.0.0
+Pillow==11.3.0
+pdf2image==1.17.0
+joblib==1.5.0
+tqdm==4.67.0
+
+streamlit==1.50.0

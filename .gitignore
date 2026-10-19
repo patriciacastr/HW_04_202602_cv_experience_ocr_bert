@@ -1,0 +1,29 @@
+# Datos pesados: se regeneran con los scripts (ver README)
+data/raw/images/
+data/ocr/*.json
+data/raw/*.parquet
+
+# Pesos de modelos
+models/baselines/*.joblib
+models/baselines/*.pkl
+models/bert/*
+!models/bert/.gitkeep
+*.pt
+*.bin
+*.safetensors
+*.ckpt
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+.ipynb_checkpoints/
+.env
+
+# Streamlit / sistema
+.streamlit/secrets.toml
+.DS_Store
+
+# Mantener estructura de carpetas vacías
+!.gitkeep
