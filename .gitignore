@@ -2,6 +2,10 @@
 data/raw/images/
 data/ocr/*.json
 data/raw/*.parquet
+data/raw/metadata.csv
+data/raw/reference_text.csv
+data/raw/pii_for_scrubbing.csv
+data/processed/*.csv
 
 # Pesos de modelos
 models/baselines/*.joblib
@@ -27,3 +31,5 @@ venv/
 
 # Mantener estructura de carpetas vacías
 !.gitkeep
+
+data/raw/_parts/
