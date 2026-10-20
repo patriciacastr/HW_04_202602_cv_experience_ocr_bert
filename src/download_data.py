@@ -47,6 +47,8 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--n-per-occ", type=int, default=800)
     ap.add_argument("--seed", type=int, default=SEED)
+    ap.add_argument("--buffer-size", type=int, default=5000,
+                    help="Tamaño del buffer de mezcla. Usa 50 para la prueba pequeña (es mucho más rápido).")
     args = ap.parse_args()
 
     ensure_dirs()
@@ -56,7 +58,7 @@ def main() -> None:
     pii_rows = []  # nombres/estado SOLO para borrarlos del texto OCR (nunca como feature)
     for occ in OCCUPATIONS:
         print(f"\n== {occ}: muestreando {args.n_per_occ} CVs ==")
-        sample = sample_occupation(occ, args.n_per_occ, args.seed)
+        sample = sample_occupation(occ, args.n_per_occ, args.seed, args.buffer_size)
         for r in tqdm(sample, desc=occ):
             cv_id = str(r["id"])
             img_path = IMG_DIR / f"{cv_id}.png"
