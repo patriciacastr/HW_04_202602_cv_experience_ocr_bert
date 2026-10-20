@@ -25,8 +25,8 @@ seaborn==0.13.2
 plotly==6.3.0
 jiwer==4.0.0
 Pillow==11.3.0
-pdf2image==1.17.0
+pypdfium2>=4.30  # lectura de PDF en la app
 joblib==1.5.0
 tqdm==4.67.0
 
-streamlit==1.50.0
+streamlit>=1.52  # la app usa width="stretch"
