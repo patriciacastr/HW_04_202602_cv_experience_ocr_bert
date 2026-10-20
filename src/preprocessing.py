@@ -32,7 +32,7 @@ import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from utils import (CAP, MET_DIR, OCR_DIR, PROC_DIR, RAW_DIR, SEED, clip_years,  # noqa: E402
-                   ensure_dirs, load_json, save_json)
+                   ensure_dirs, load_json, load_json_many, save_json)
 
 # --------------------------------------------------------------------------- #
 # Patrones de respuestas directas (se deben revisar leyendo >= 50 textos reales)
@@ -206,12 +206,13 @@ def main() -> None:
         pii = None
         print("AVISO: no existe pii_for_scrubbing.csv; los nombres NO se podrán borrar por lista.")
 
+    print(f"Leyendo {len(meta)} archivos de OCR (en paralelo)...", flush=True)
+    ocr = load_json_many([OCR_DIR / f"{i}.json" for i in meta["id"]])
     rows = []
     for _, m in meta.iterrows():
-        f = OCR_DIR / f"{m['id']}.json"
-        if not f.exists():
+        d = ocr.get(OCR_DIR / f"{m['id']}.json")
+        if d is None:
             continue
-        d = load_json(f)
         names = None
         if pii is not None and m["id"] in pii.index:
             names = [str(pii.loc[m["id"], "first_name"]), str(pii.loc[m["id"], "last_name"])]
