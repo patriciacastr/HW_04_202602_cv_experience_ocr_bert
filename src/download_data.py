@@ -18,6 +18,9 @@ Uso:
 from __future__ import annotations
 
 import argparse
+import json
+import resource
+import signal
 import sys
 from pathlib import Path
 
@@ -31,16 +34,31 @@ from utils import IMG_DIR, OCCUPATIONS, RAW_DIR, SEED, ensure_dirs, set_seed  # 
 REPO = "sumin-yu/PopResume"
 
 
-def sample_occupation(occ: str, n: int, seed: int, buffer_size: int = 5000):
-    """Hace streaming de una ocupación y toma n CVs sin foto, con semilla fija."""
+def _announce(signum, frame):  # deja huella si el sistema mata el proceso con una señal
+    print(f"\n[download_data] recibí la señal {signum}; el proceso se detiene.", flush=True)
+    sys.exit(1)
+
+
+for _sig in (signal.SIGTERM, signal.SIGINT, signal.SIGHUP):
+    try:
+        signal.signal(_sig, _announce)
+    except (ValueError, OSError):
+        pass
+
+
+def rss_mb() -> float:
+    return resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+
+
+def stream_occupation(occ: str, seed: int, buffer_size: int):
+    """Streaming de una ocupación: SOLO CVs sin foto, mezclados con semilla fija (iterador, no lista)."""
     ds = load_dataset(
         "parquet",
         data_files=f"hf://datasets/{REPO}/data/images/{occ}-*.parquet",
         split="train",
         streaming=True,
     )
-    ds = ds.filter(lambda r: not r["has_photo"]).shuffle(seed=seed, buffer_size=buffer_size)
-    return list(ds.take(n))
+    return ds.filter(lambda r: not r["has_photo"]).shuffle(seed=seed, buffer_size=buffer_size)
 
 
 def main() -> None:
@@ -54,34 +72,40 @@ def main() -> None:
     ensure_dirs()
     set_seed(args.seed)
 
-    rows = []
-    pii_rows = []  # nombres/estado SOLO para borrarlos del texto OCR (nunca como feature)
+    parts_dir = RAW_DIR / "_parts"
+    parts_dir.mkdir(parents=True, exist_ok=True)
+    rows, pii_rows = [], []  # pii: nombres/estado SOLO para borrarlos del texto OCR (nunca features)
     for occ in OCCUPATIONS:
-        print(f"\n== {occ}: muestreando {args.n_per_occ} CVs ==")
-        sample = sample_occupation(occ, args.n_per_occ, args.seed, args.buffer_size)
-        for r in tqdm(sample, desc=occ):
+        part = parts_dir / f"{occ}.json"
+        if part.exists():  # ocupación ya completa en una corrida anterior: se reutiliza
+            saved = json.loads(part.read_text(encoding="utf-8"))
+            if len(saved["rows"]) >= args.n_per_occ:
+                print(f"== {occ}: ya completa ({len(saved['rows'])} CVs), se reutiliza ==", flush=True)
+                rows += saved["rows"][: args.n_per_occ]
+                pii_rows += saved["pii"][: args.n_per_occ]
+                continue
+        print(f"\n== {occ}: muestreando {args.n_per_occ} CVs (buffer {args.buffer_size}) ==", flush=True)
+        occ_rows, occ_pii = [], []
+        bar = tqdm(total=args.n_per_occ, desc=occ, mininterval=5)
+        for r in stream_occupation(occ, args.seed, args.buffer_size):
             cv_id = str(r["id"])
             img_path = IMG_DIR / f"{cv_id}.png"
             if not img_path.exists():
                 r["image"].save(img_path)  # r["image"] es un PIL.Image
-            rows.append(
-                {
-                    "id": cv_id,
-                    "occupation": occ,
-                    "exp_year": r.get("exp_year"),
-                    # Solo para equidad (Pregunta 4). Si el campo no existe quedará vacío.
-                    "sex": r.get("sex"),
-                    "race": r.get("race"),
-                }
-            )
-            pii_rows.append(
-                {
-                    "id": cv_id,
-                    "first_name": r.get("first_name"),
-                    "last_name": r.get("last_name"),
-                    "state": r.get("state"),
-                }
-            )
+            occ_rows.append({"id": cv_id, "occupation": occ, "exp_year": r.get("exp_year"),
+                             # Solo para equidad (Pregunta 4)
+                             "sex": r.get("sex"), "race": r.get("race")})
+            occ_pii.append({"id": cv_id, "first_name": r.get("first_name"),
+                            "last_name": r.get("last_name"), "state": r.get("state")})
+            bar.update(1)
+            if len(occ_rows) % 100 == 0:
+                print(f"  {occ}: {len(occ_rows)}/{args.n_per_occ} | RAM pico {rss_mb():.0f} MB", flush=True)
+            if len(occ_rows) >= args.n_per_occ:
+                break
+        bar.close()
+        part.write_text(json.dumps({"rows": occ_rows, "pii": occ_pii}, default=str), encoding="utf-8")
+        rows += occ_rows
+        pii_rows += occ_pii
 
     meta = pd.DataFrame(rows)
     meta.to_csv(RAW_DIR / "metadata.csv", index=False)
