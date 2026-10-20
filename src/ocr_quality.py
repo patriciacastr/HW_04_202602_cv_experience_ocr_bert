@@ -31,7 +31,8 @@ import numpy as np
 import pandas as pd
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from utils import FIG_DIR, MET_DIR, OCR_DIR, RAW_DIR, TAB_DIR, ensure_dirs, load_json, save_json  # noqa: E402
+from utils import (FIG_DIR, MET_DIR, OCR_DIR, RAW_DIR, TAB_DIR, ensure_dirs, load_json_many,  # noqa: E402
+                   save_json)
 
 YEAR = re.compile(r"\b(?:19|20)\d{2}\b")
 RANGE = re.compile(r"\b((?:19|20)\d{2})\s*-\s*((?:19|20)\d{2}|present|current)\b")
@@ -82,12 +83,15 @@ def main() -> None:
     ref = pd.read_csv(RAW_DIR / "reference_text.csv", dtype={"id": str}).set_index("id")["text"]
     meta = pd.read_csv(RAW_DIR / "metadata.csv", dtype={"id": str}).set_index("id")
 
+    print(f"Leyendo {len(ref)} archivos de OCR (en paralelo)...", flush=True)
+    ocr = load_json_many([OCR_DIR / f"{i}.json" for i in ref.index])
+    print(f"Leídos: {len(ocr)}. Calculando CER/WER...", flush=True)
+
     rows = []
     for cv_id, ref_text in ref.items():
-        f = OCR_DIR / f"{cv_id}.json"
-        if not f.exists():
+        d = ocr.get(OCR_DIR / f"{cv_id}.json")
+        if d is None:
             continue
-        d = load_json(f)
         m = evaluate_pair(ref_text, d["text_ordered"])
         if m:
             rows.append({"id": cv_id, "occupation": meta.loc[cv_id, "occupation"],

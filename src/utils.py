@@ -85,6 +85,16 @@ def load_json(path: Path):
         return json.load(f)
 
 
+def load_json_many(paths, workers: int = 32) -> dict:
+    """Lee muchos JSON en paralelo (útil en Google Drive, donde cada lectura tiene latencia).
+    Devuelve {Path: contenido}; los archivos que no existen se omiten."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    paths = [Path(p) for p in paths if Path(p).exists()]
+    with ThreadPoolExecutor(max_workers=workers) as ex:
+        return dict(zip(paths, ex.map(load_json, paths)))
+
+
 def _json_default(o):
     """Permite serializar tipos numpy."""
     if isinstance(o, (np.integer,)):
