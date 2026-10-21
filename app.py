@@ -288,6 +288,10 @@ with tab2:
             k[1].metric("Mean WER", f"{qs['wer_mean']:.3f}")
             k[2].metric("Years read correctly", f"{100 * qs['years_recall_mean']:.1f}%")
             k[3].metric("Mean OCR confidence", f"{qs['mean_conf_mean']:.3f}")
+            if "wer_alnum_mean" in qs:
+                st.caption(f"WER ignoring punctuation and symbols (| • -): {qs['wer_alnum_mean']:.3f}. "
+                           "The plain WER is inflated by formatting differences between the image and the "
+                           "reference text, not by misread words.")
         c1, c2 = st.columns(2)
         for col, metric, title in ((c1, "cer", "Character error rate (CER)"),
                                    (c2, "wer", "Word error rate (WER)")):
@@ -308,6 +312,19 @@ with tab2:
         st.plotly_chart(style(fig, 340), width="stretch")
         chart_note("years and date ranges are what the models actually need, so this is the OCR "
                    "metric that matters most; CER alone can look good while a digit in a year is wrong.")
+
+        fm = read_csv(str(TAB_DIR / "ocr_failure_modes.csv"), dtype={"token": str})
+        if fm is not None:
+            st.subheader("Where does the OCR fail?")
+            c1, c2 = st.columns(2)
+            c1.markdown("**Words the OCR missed** (in the reference, not in the OCR)")
+            c1.dataframe(fm[fm["kind"] == "missing in OCR"][["token", "count"]].head(12),
+                         hide_index=True, width="stretch")
+            c2.markdown("**Words the OCR invented** (in the OCR, not in the reference)")
+            c2.dataframe(fm[fm["kind"] == "extra in OCR"][["token", "count"]].head(12),
+                         hide_index=True, width="stretch")
+            st.caption("Pairs such as *implemented / lmplemented* or *RI / Rl* show the typical confusion "
+                       "between a capital I and a lowercase l; *01 / 0* is a month that lost a digit.")
 
     st.header("Example: CV image, OCR boxes and extracted text")
     ocr_files = sorted(OCR_DIR.glob("*.json")) if OCR_DIR.exists() else []
@@ -521,6 +538,16 @@ with tab3:
                    "consistently positive mean error is systematically over-estimated, which a bar of "
                    "absolute error alone would hide.")
         show_answer("Q4")
+
+    st.header("Where does BERT fail?")
+    es = read_csv(str(TAB_DIR / "bert_error_by_structure.csv"))
+    if es is None:
+        missing("The error-by-structure table")
+    else:
+        st.dataframe(es.style.format({"MAE (years)": "{:.2f}", "mean error (pred - true)": "{:+.2f}"}),
+                     hide_index=True, width="stretch")
+        st.caption("Test CVs grouped by the structure of their work history. A group with a larger MAE or a "
+                   "clearly positive/negative mean error shows what kind of CV the model finds hard.")
 
     st.header("The 10 largest BERT errors")
     top = read_csv(str(TAB_DIR / "bert_top10_errors.csv"), dtype={"id": str})
