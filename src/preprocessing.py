@@ -70,6 +70,12 @@ STREET = re.compile(
     r"(?:Street|St|Avenue|Ave|Road|Rd|Drive|Dr|Lane|Ln|Boulevard|Blvd|Way|Court|Ct|"
     r"Place|Pl|Circle|Cir|Terrace|Trail)\b\.?", re.I)
 CITY_STATE_ZIP = re.compile(r"\b[A-Z][A-Za-z.' -]+,\s*[A-Z]{2}\s*\d{5}(?:-\d{4})?\b")
+# Cabecera de PopResume: "GA, USA | +1-... | correo". El OCR a veces lee mal el estado ("RI" -> "Rl").
+STATE_USA = re.compile(r"\b[A-Za-z]{2},\s*USA\b")
+# La primera línea del CV es el nombre en mayúsculas (el OCR a veces junta nombre y apellido).
+SECTION_HEADERS = {"WORK HISTORY", "EDUCATION", "SUMMARY", "SKILLS", "EXPERIENCE", "PROFILE",
+                   "OBJECTIVE", "CERTIFICATIONS", "PROJECTS", "WORK EXPERIENCE"}
+HEADER_NAME = re.compile(r"\A\s*([A-Z][A-Z .'-]{3,40})[ \t]*(?=\n|\Z)")
 
 
 # --------------------------------------------------------------------------- #
@@ -120,11 +126,21 @@ def scrub_personal(text: str, names: list[str] | None) -> tuple[str, dict]:
     text, c["phone"] = PHONE.subn("[PHONE]", text)
     text, k1 = STREET.subn("[ADDRESS]", text)
     text, k2 = CITY_STATE_ZIP.subn("[ADDRESS]", text)
-    c["address"] = k1 + k2
-    for nm in names or []:
-        if nm and len(nm) > 1:
-            text, k = re.subn(rf"\b{re.escape(nm)}\b", "[NAME]", text, flags=re.I)
-            c["name"] += k
+    text, k3 = STATE_USA.subn("[ADDRESS]", text)
+    c["address"] = k1 + k2 + k3
+    # Nombre completo, también si el OCR lo leyó sin espacio ("RANDIGORDON")
+    nms = [n for n in (names or []) if n and len(n) > 1 and str(n).lower() != "nan"]
+    if len(nms) >= 2:
+        text, k = re.subn(rf"\b{re.escape(nms[0])}\s*{re.escape(nms[1])}\b", "[NAME]", text, flags=re.I)
+        c["name"] += k
+    for nm in nms:
+        text, k = re.subn(rf"\b{re.escape(nm)}\b", "[NAME]", text, flags=re.I)
+        c["name"] += k
+    # Primera línea en mayúsculas = nombre del candidato, aunque no coincida con la lista (errores de OCR)
+    m = HEADER_NAME.match(text)
+    if m and m.group(1).strip() not in SECTION_HEADERS:
+        text = "[NAME]" + text[m.end(1):]
+        c["name"] += 1
     return text, c
 
 
