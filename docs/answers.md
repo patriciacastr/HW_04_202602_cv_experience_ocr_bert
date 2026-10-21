@@ -12,7 +12,7 @@ Its largest errors are small (the worst is 1.09 years). Seven of the ten involve
 ## Q2
 **OCR noise costs almost nothing here, because PopResume CVs are clean digital renderings.**
 
-PaddleOCR reads the 4,000 CVs with a character error rate of 0.86% and a word error rate of about 10%. The word error rate looks high, but it is mostly formatting and a few systematic confusions, such as a capital I read as a lowercase l ("lmplemented", "apls") and the loss of a digit in a month. Years are read correctly in 99.99% of cases and full date ranges in 99.6%, which is what matters for this task.
+PaddleOCR reads the 4,000 CVs with a character error rate of 0.86% and a word error rate of about 10%. The word error rate looks high, but it is almost entirely formatting: counting only letters and digits (ignoring punctuation and symbols), the word error rate drops to 0.11%. What remains are a few systematic confusions, such as a capital I read as a lowercase l ("lmplemented", "apls") and the loss of a digit in a month. Years are read correctly in 99.99% of cases and full date ranges in 99.6%, which is what matters for this task.
 
 Scoring the same test CVs with the OCR text and with the perfect reference text gives almost the same MAE: BERT 0.196 against 0.217, TF-IDF 0.986 against 0.987, embeddings 1.258 against 1.241. The differences are within about 0.02 years. BERT is slightly *better* on OCR text, most likely because it was trained on OCR text and the reference text is a small distribution shift, not because OCR helps.
 
