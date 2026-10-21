@@ -56,7 +56,7 @@ def main() -> None:
     ap.add_argument("--encoder", default="sentence-transformers/all-MiniLM-L6-v2")
     ap.add_argument("--text-col", default="text_clean",
                     choices=["text_raw", "text_clean", "text_clean_lowconf"])
-    ap.add_argument("--alphas", type=float, nargs="+", default=[0.01, 0.1, 1, 10, 100])
+    ap.add_argument("--alphas", type=float, nargs="+", default=[0.0001, 0.001, 0.003, 0.01, 0.1, 1, 10, 100])
     ap.add_argument("--batch-size", type=int, default=32)
     ap.add_argument("--name", default="embeddings")
     args = ap.parse_args()

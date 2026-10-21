@@ -41,7 +41,7 @@ def main() -> None:
     ap.add_argument("--keep-digits", type=int, default=1)
     ap.add_argument("--ngram-max", type=int, default=2)
     ap.add_argument("--min-df", type=int, default=3)
-    ap.add_argument("--alphas", type=float, nargs="+", default=[0.1, 0.3, 1, 3, 10, 30])
+    ap.add_argument("--alphas", type=float, nargs="+", default=[0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10, 30])
     ap.add_argument("--name", default=None)
     args = ap.parse_args()
 
