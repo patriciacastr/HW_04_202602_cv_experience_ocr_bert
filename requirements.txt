@@ -1,32 +1,45 @@
-# IMPORTANTE: instala PaddlePaddle PRIMERO (build CPU o GPU) desde su índice oficial:
-#   CPU:  python -m pip install paddlepaddle==3.2.0 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
-#   GPU:  ver https://www.paddlepaddle.org.cn/install/quick (elige tu versión de CUDA)
-# Luego: pip install -r requirements.txt
+# Versiones con las que se obtuvieron los resultados (Google Colab, GPU Tesla T4).
 #
-# TODO: antes de entregar, ejecuta `pip freeze | grep -i -E "paddle|transformers|torch|..."`
-# y reemplaza estas versiones por las que realmente usaste (la tarea pide versiones fijadas).
+# IMPORTANTE: PaddlePaddle y PyTorch chocan en un mismo entorno (NCCL), por eso el pipeline
+# se corrió en DOS cuadernos de Colab separados:
+#   - Cuaderno A (OCR):      bloque "OCR" + bloque "Comun"
+#   - Cuaderno B (modelos):  bloque "Modelos" + bloque "Comun"
+# En un entorno propio, crea dos entornos virtuales (uno por bloque) en lugar de uno solo.
+#
+# Instala PaddlePaddle PRIMERO, desde su índice oficial:
+#   GPU (CUDA 12.6): python -m pip install paddlepaddle-gpu==3.2.0 -i https://www.paddlepaddle.org.cn/packages/stable/cu126/
+#   CPU:             python -m pip install paddlepaddle==3.2.0 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
+# Luego: pip install -r requirements.txt  (o solo las líneas de tu bloque)
+#
+# Para correr SOLO la app de Streamlit usa requirements-app.txt.
 
-paddlepaddle==3.2.0
-paddleocr==3.2.0
+# ---- OCR (cuaderno A) ----
+paddlepaddle-gpu==3.2.0
+paddleocr==3.7.0
+paddlex==3.7.2
+opencv-contrib-python==4.10.0.84
+jiwer==4.0.0
 
-datasets==4.0.0
-huggingface_hub==0.35.0
-transformers==4.56.0
-accelerate==1.10.0
-sentence-transformers==5.1.0
-torch==2.8.0
-
-pandas==2.3.0
-numpy==2.1.0
-scikit-learn==1.7.0
-scipy==1.15.0
+# ---- Modelos (cuaderno B) ----
+torch==2.11.0
+transformers==5.20.1
+accelerate==1.15.0
+sentence-transformers==5.7.0
+scikit-learn==1.6.1
+scipy==1.16.3
+joblib==1.6.0
 matplotlib==3.10.0
 seaborn==0.13.2
-plotly==6.3.0
-jiwer==4.0.0
-Pillow==11.3.0
-pypdfium2>=4.30  # lectura de PDF en la app
-joblib==1.5.0
-tqdm==4.67.0
+plotly==5.24.1
 
-streamlit>=1.52  # la app usa width="stretch"
+# ---- Común ----
+datasets==4.8.5
+huggingface_hub==1.33.0
+numpy==2.1.3
+pandas==2.2.3
+pillow==11.3.0
+tqdm==4.67.3
+
+# ---- App (ver requirements-app.txt para las versiones con las que se probó) ----
+streamlit==1.66.1
+pypdfium2==5.14.0
