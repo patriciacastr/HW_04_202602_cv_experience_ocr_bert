@@ -35,7 +35,10 @@ from utils import (FIG_DIR, MET_DIR, OCR_DIR, RAW_DIR, TAB_DIR, ensure_dirs, loa
                    save_json)
 
 YEAR = re.compile(r"\b(?:19|20)\d{2}\b")
-RANGE = re.compile(r"\b((?:19|20)\d{2})\s*-\s*((?:19|20)\d{2}|present|current)\b")
+# Rangos de fechas: "2018.05-2020.05" (formato de PopResume) o "2018 - 2020" / "2018 - present".
+# Se compara el rango COMPLETO (inicio y fin con mes), no solo el año.
+RANGE = re.compile(r"\b((?:19|20)\d{2}(?:[./]\d{1,2})?)\s*-\s*"
+                   r"((?:19|20)\d{2}(?:[./]\d{1,2})?|present|current)\b")
 TOKEN = re.compile(r"\w+")
 
 
@@ -78,6 +81,12 @@ def evaluate_pair(ref_raw: str, hyp_raw: str) -> dict:
     }
 
 
+def token_diff(ref_raw: str, hyp_raw: str) -> tuple[Counter, Counter]:
+    """Tokens (palabras/números) de la referencia que NO aparecen en el OCR, y al revés."""
+    r, h = Counter(TOKEN.findall(norm(ref_raw))), Counter(TOKEN.findall(norm(hyp_raw)))
+    return r - h, h - r
+
+
 def main() -> None:
     ensure_dirs()
     ref = pd.read_csv(RAW_DIR / "reference_text.csv", dtype={"id": str}).set_index("id")["text"]
@@ -88,10 +97,14 @@ def main() -> None:
     print(f"Leídos: {len(ocr)}. Calculando CER/WER...", flush=True)
 
     rows = []
+    missing_tok, extra_tok = Counter(), Counter()
     for cv_id, ref_text in ref.items():
         d = ocr.get(OCR_DIR / f"{cv_id}.json")
         if d is None:
             continue
+        miss, extra = token_diff(ref_text, d["text_ordered"])
+        missing_tok.update(miss)
+        extra_tok.update(extra)
         m = evaluate_pair(ref_text, d["text_ordered"])
         if m:
             rows.append({"id": cv_id, "occupation": meta.loc[cv_id, "occupation"],
@@ -101,6 +114,15 @@ def main() -> None:
         print("No hay CVs con OCR y texto de referencia. ¿Corriste ocr_extraction.py?")
         return
     df.to_csv(TAB_DIR / "ocr_quality_per_cv.csv", index=False)
+
+    # Dónde falla el OCR: tokens más frecuentes que faltan en el OCR y que sobran (Pregunta 2)
+    modes = pd.concat([
+        pd.DataFrame(missing_tok.most_common(30), columns=["token", "count"]).assign(kind="missing in OCR"),
+        pd.DataFrame(extra_tok.most_common(30), columns=["token", "count"]).assign(kind="extra in OCR"),
+    ])[["kind", "token", "count"]]
+    modes.to_csv(TAB_DIR / "ocr_failure_modes.csv", index=False)
+    worst = df.sort_values("cer", ascending=False).head(10)[["id", "occupation", "cer", "wer", "mean_conf"]]
+    worst.to_csv(TAB_DIR / "ocr_worst_cvs.csv", index=False)
 
     metrics = ["cer", "wer", "bow_f1", "years_recall", "ranges_recall", "mean_conf"]
     by_occ = df.groupby("occupation")[metrics].mean().round(4)
@@ -131,6 +153,9 @@ def main() -> None:
     fig.savefig(FIG_DIR / "ocr_cer_wer_hist.png", dpi=150)
 
     print(by_occ.to_string())
+    print("\nTokens que más FALTAN en el OCR:", missing_tok.most_common(12))
+    print("Tokens que más SOBRAN en el OCR:", extra_tok.most_common(12))
+    print("10 CVs con peor CER:", ", ".join(worst["id"]))
     print("\nResumen:", summary)
     print("\nNota: si CER/WER salen altos pero bow_f1 es alto, el problema es el ORDEN de lectura "
           "(p. ej. dos columnas), no la lectura de caracteres.")
