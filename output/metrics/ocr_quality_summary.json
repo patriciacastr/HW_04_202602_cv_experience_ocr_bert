@@ -1,0 +1,16 @@
+{
+  "n_cvs": 4000,
+  "cer_mean": 0.0086,
+  "wer_mean": 0.0995,
+  "wer_alnum_mean": 0.0011,
+  "bow_f1_mean": 0.999,
+  "years_recall_mean": 0.9999,
+  "ranges_recall_mean": 0.9962,
+  "mean_conf_mean": 0.9825,
+  "cer_median": 0.0082,
+  "wer_median": 0.0952,
+  "wer_alnum_median": 0.0,
+  "cer_p95": 0.0146,
+  "wer_p95": 0.1628,
+  "wer_alnum_p95": 0.011
+}

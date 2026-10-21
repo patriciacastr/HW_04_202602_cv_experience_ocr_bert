@@ -1,0 +1,12 @@
+{
+  "model": "embeddings",
+  "encoder": "sentence-transformers/all-MiniLM-L6-v2",
+  "chunk_tokens": 254,
+  "text_col": "text_clean",
+  "best_alpha": 0.01,
+  "val_mae": 1.1988355902097187,
+  "test_mae": 1.2575819297838977,
+  "test_mae_reference": 1.2411915950865053,
+  "train_time_s": 5.680373071000304,
+  "inference_time_per_cv_s": 0.0019804149700000076
+}
