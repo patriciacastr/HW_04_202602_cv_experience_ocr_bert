@@ -75,6 +75,9 @@ def evaluate_pair(ref_raw: str, hyp_raw: str) -> dict:
     return {
         "cer": jiwer.cer(ref, hyp) if hyp else 1.0,
         "wer": jiwer.wer(ref, hyp) if hyp else 1.0,
+        # WER sin puntuación ni símbolos (| • -): solo palabras y números, en orden. Aísla errores
+        # de lectura de las diferencias de formato entre la imagen y el texto de referencia.
+        "wer_alnum": jiwer.wer(" ".join(TOKEN.findall(ref)), " ".join(TOKEN.findall(hyp))) if hyp else 1.0,
         "bow_f1": bow_f1(ref, hyp),
         "years_recall": recall(Counter(YEAR.findall(ref)), Counter(YEAR.findall(hyp))),
         "ranges_recall": recall(Counter(RANGE.findall(ref)), Counter(RANGE.findall(hyp))),
@@ -124,7 +127,7 @@ def main() -> None:
     worst = df.sort_values("cer", ascending=False).head(10)[["id", "occupation", "cer", "wer", "mean_conf"]]
     worst.to_csv(TAB_DIR / "ocr_worst_cvs.csv", index=False)
 
-    metrics = ["cer", "wer", "bow_f1", "years_recall", "ranges_recall", "mean_conf"]
+    metrics = ["cer", "wer", "wer_alnum", "bow_f1", "years_recall", "ranges_recall", "mean_conf"]
     by_occ = df.groupby("occupation")[metrics].mean().round(4)
     by_occ.loc["TODAS"] = df[metrics].mean().round(4)
     by_occ.to_csv(TAB_DIR / "ocr_quality_by_occupation.csv")
@@ -132,8 +135,8 @@ def main() -> None:
     summary = {
         "n_cvs": int(len(df)),
         **{f"{m}_mean": round(float(df[m].mean()), 4) for m in metrics},
-        **{f"{m}_median": round(float(df[m].median()), 4) for m in ("cer", "wer")},
-        **{f"{m}_p95": round(float(df[m].quantile(0.95)), 4) for m in ("cer", "wer")},
+        **{f"{m}_median": round(float(df[m].median()), 4) for m in ("cer", "wer", "wer_alnum")},
+        **{f"{m}_p95": round(float(df[m].quantile(0.95)), 4) for m in ("cer", "wer", "wer_alnum")},
     }
     save_json(summary, MET_DIR / "ocr_quality_summary.json")
 

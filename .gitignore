@@ -33,3 +33,4 @@ venv/
 !.gitkeep
 
 data/raw/_parts/
+output/metrics/review_sample.txt
