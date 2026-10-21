@@ -1,0 +1,15 @@
+{
+  "n_cvs": 4000,
+  "cap": 20,
+  "n_at_cap": 25,
+  "pct_at_cap": 0.62,
+  "cvs_with_masked_exp": 0,
+  "cvs_with_masked_age": 0,
+  "cvs_with_any_masking": 0,
+  "cvs_name_found": 4000,
+  "cvs_email_found": 4000,
+  "cvs_phone_found": 4000,
+  "cvs_address_found": 4000,
+  "conf_threshold": 0.6,
+  "mean_pct_lines_dropped_lowconf": 0.0
+}

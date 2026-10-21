@@ -1,0 +1,18 @@
+{
+  "model": "tfidf",
+  "text_col": "text_clean",
+  "keep_digits": true,
+  "ngram_range": [
+    1,
+    2
+  ],
+  "min_df": 3,
+  "best_alpha": 0.1,
+  "n_features": 9685,
+  "val_mae": 0.9803582299618252,
+  "test_mae": 0.9862785268779064,
+  "test_mae_reference": 0.9867003923722936,
+  "train_time_s": 0.39472213199996986,
+  "tuning_time_s": 0.4921602099998381,
+  "inference_time_per_cv_s": 0.00010100750999981755
+}

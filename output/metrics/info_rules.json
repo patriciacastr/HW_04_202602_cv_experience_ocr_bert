@@ -1,0 +1,11 @@
+{
+  "model": "rules",
+  "description": "suma de duraciones de cargos (sin aprendizaje)",
+  "fallback_median": 5.677496163038528,
+  "share_cvs_with_dates": 1.0,
+  "val_mae": 0.020842255381327064,
+  "test_mae": 0.021315900764179396,
+  "test_mae_reference": 0.021315900764179396,
+  "train_time_s": 0.0,
+  "inference_time_per_cv_s": 3.1239066666633636e-05
+}
