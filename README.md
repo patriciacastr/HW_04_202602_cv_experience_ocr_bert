@@ -192,9 +192,11 @@ Otros riesgos: los CVs contienen datos personales protegidos por la ley peruana 
 Las etapas pesadas (OCR y BERT) se corrieron en Google Colab con una Tesla T4: `notebooks/colab_ocr_pipeline.ipynb` (PaddleOCR, que requiere PaddlePaddle) y `notebooks/colab_models_pipeline.ipynb` (modelos de PyTorch). Son cuadernos separados porque PaddlePaddle y PyTorch entran en conflicto en un mismo entorno. Los datos, los modelos y las salidas viven en una carpeta de Drive que no se sube al repositorio.
 
 ```bash
-# 0. Entorno (instala PaddlePaddle primero, ver requirements.txt)
+# 0. Entorno. PaddlePaddle y PyTorch chocan en un mismo entorno: usa dos entornos (o dos
+#    cuadernos de Colab), uno para el OCR y otro para los modelos. Ver los bloques de requirements.txt.
 python -m venv .venv && source .venv/bin/activate
-pip install paddlepaddle==3.2.0 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/
+pip install paddlepaddle-gpu==3.2.0 -i https://www.paddlepaddle.org.cn/packages/stable/cu126/   # GPU
+# (en CPU: paddlepaddle==3.2.0 -i https://www.paddlepaddle.org.cn/packages/stable/cpu/)
 pip install -r requirements.txt
 
 # 1. Hugging Face: aceptar las condiciones de sumin-yu/PopResume e iniciar sesión
@@ -238,7 +240,7 @@ Las imágenes, los JSON del OCR y los pesos de los modelos **no** se suben al re
 ## 13. Cómo correr la app de Streamlit
 
 ```bash
-pip install -r requirements.txt
+pip install -r requirements-app.txt
 streamlit run app.py
 ```
 

@@ -1,0 +1,15 @@
+# Solo para correr la app de Streamlit (streamlit run app.py).
+# Versiones con las que se probó (GitHub Codespaces, Python 3.14).
+# La app lee los resultados guardados en output/ y data/splits/, así que no necesita torch ni PaddleOCR.
+# La pestaña 4 (estimador interactivo) solo ejecuta los modelos si existen models/ y PaddleOCR
+# (instálalos con requirements.txt); sin ellos la app lo avisa y el resto funciona igual.
+# Nota: si cargas modelos de scikit-learn entrenados con otra versión (requirements.txt usa 1.6.1),
+# reentrénalos con python src/baseline_tfidf.py y python src/baseline_embeddings.py.
+
+streamlit==1.66.1
+plotly==7.1.0
+pandas==3.0.6
+numpy==2.5.4
+scikit-learn==1.9.1
+pillow==13.0.0
+pypdfium2==5.14.0
